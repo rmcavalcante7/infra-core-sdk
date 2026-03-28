@@ -1,16 +1,36 @@
 # 🔐 infra-core-sdk
 
-Secure and extensible credential management SDK for Python applications.
+[![PyPI version](https://img.shields.io/pypi/v/infra-core-sdk.svg)](https://pypi.org/project/infra-core-sdk/)
+[![Python](https://img.shields.io/pypi/pyversions/infra-core-sdk.svg)](https://pypi.org/project/infra-core-sdk/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+Secure, extensible, and production-ready credential management SDK for Python.
+
+---
+
+## 🚀 Why this exists
+
+Managing credentials securely is hard.
+
+This SDK solves:
+
+- ❌ Scattered secrets across projects  
+- ❌ Manual encryption handling  
+- ❌ Inconsistent file structures  
+- ❌ Hardcoded paths  
+
+👉 With a **consistent, secure and extensible system**
 
 ---
 
 ## 🚀 Features
 
-* 🔐 Automatic encryption (Fernet)
-* 📦 Multiple credential support (`name`)
-* ⚙️ Decoupled setup and load flows
-* 📁 Automatic path management
-* 🧩 Modular and extensible architecture
+- 🔐 Automatic encryption (Fernet)
+- 📦 Multiple credential profiles (`name`)
+- ⚙️ Decoupled setup and load flows
+- 📁 Dynamic path configuration
+- 🧠 Smart dependency resolution
+- 🧩 Extensible architecture
 
 ---
 
@@ -22,128 +42,125 @@ pip install infra-core-sdk
 
 ---
 
-## 🧩 Usage
-
-### 🔹 Define your credentials model
+## 🧩 Quick Start
 
 ```python
 from dataclasses import dataclass
-from infra_core import BaseCredentials
-
-@dataclass(frozen=True)
-class MyCreds(BaseCredentials):
-    api_token: str
-```
-
----
-
-### 🔹 Save credentials (setup)
-
-```python
-from infra_core import FernetEncryption
+from infra_core import BaseCredentials, FernetEncryption, CredentialsLoader
 from infra_core.credentials.setup.credentials_setup_service import CredentialsSetupService
 
+@dataclass(frozen=True)
+class MyCredentials(BaseCredentials):
+    api_token: str
+
+# Setup
 setup = CredentialsSetupService(FernetEncryption)
+setup.setup(MyCredentials(api_token="123"), name="default")
 
-setup.setup(
-    MyCreds(api_token="123"),
-    name="pipefy"
-)
-```
-
----
-
-### 🔹 Load credentials
-
-```python
-from infra_core import CredentialsLoader, FernetEncryption
-
-creds = CredentialsLoader.load(
-    MyCreds,
-    FernetEncryption,
-    name="pipefy"
-)
+# Load
+creds = CredentialsLoader.load(MyCredentials, FernetEncryption, name="default")
 
 print(creds.api_token)
 ```
 
 ---
 
-## 📁 Generated structure
+## 📁 Generated Structure
 
 ```text
-your_project/
-├── secret/
-│   ├── secret.key
-│   ├── pipefy.json
+project/
+└── secret/
+    ├── secret.key
+    └── default.json
 ```
 
 ---
 
-## 🔄 Multiple credentials
+## ⚙️ Path Configuration (Power Feature)
 
 ```python
-setup.setup(..., name="aws")
-setup.setup(..., name="stripe")
+from infra_core import PathConfig
+
+config = PathConfig.getDefault()
+
+config = config.addDirectory("logs", "logs")
+config = config.updateDirectory("downloads", "downloads_v2")
+config = config.updateDirectory("secret_dir", "new_secret")
+
+print(config.directories)
+```
+
+---
+
+## 🧠 Behavior Model
+
+| Type | Control |
+|------|--------|
+| secret_dir | user |
+| secret_key | derived |
+| credentials | derived |
+| downloads | user |
+| custom dirs | user |
+
+---
+
+## 🔁 Dependency Example
+
+```python
+config = config.updateDirectory("secret_dir", "new_secret")
+```
+
+```text
+secret_key -> new_secret/secret.key
+credentials -> new_secret/{name}.json
+```
+
+---
+
+## ✋ Override Example
+
+```python
+config = config.updateDirectory("secret_key", "custom.key")
+```
+
+✔ stops automatic updates
+
+---
+
+## 🧪 Real Usage Pattern
+
+```python
+config = PathConfig.getDefault()
+
+config = config.addDirectory("logs", "logs")
+config = config.updateDirectory("downloads", "downloads_v2")
+config = config.updateDirectory("secret_dir", "new_secret")
 ```
 
 ---
 
 ## 🔐 Encryption
 
-### Default
+Default:
 
 ```python
 from infra_core import FernetEncryption
 ```
 
----
-
-### Custom implementation
+Custom:
 
 ```python
 class CustomEncryption:
-    def encrypt(self, value: str) -> str:
-        ...
-
-    def decrypt(self, value: str) -> str:
-        ...
+    def encrypt(self, value: str) -> str: ...
+    def decrypt(self, value: str) -> str: ...
 ```
 
 ---
 
-## ⚠️ Important rules
+## ⚠️ Important Rules
 
-### ❌ Do NOT manually create keys
-
-```python
-Fernet.generate_key()
-FernetEncryption(key)
-```
-
----
-
-### ✅ Let the SDK manage it
-
-```python
-CredentialsSetupService(FernetEncryption)
-```
-
----
-
-## 🧠 How it works
-
-```text
-SETUP:
-    → generates key
-    → encrypts data
-    → saves file
-
-LOAD:
-    → reads key
-    → decrypts data
-    → returns typed object
-```
+❌ Do NOT manage keys manually  
+✅ Let the SDK handle encryption lifecycle  
 
 ---
 
@@ -152,6 +169,7 @@ LOAD:
 ```bash
 pip install -e .[dev]
 pytest
+mypy src/
 ```
 
 ---
