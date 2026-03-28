@@ -97,7 +97,7 @@ class CredentialsSetupService:
             >>> service.setup(creds)
         """
         try:
-            manager = PathManager(DEFAULT_PATH_CONFIG)
+            manager = PathManager(PathConfig.getDefault())
             key_path: Path = manager.getPath(PathConfig().secretKeyKey)
             credentials_path: Path = manager.getPath(PathConfig().credentialsDir, name)
 

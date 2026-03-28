@@ -17,7 +17,7 @@ from infra_core.credentials.exceptions.credentials_exceptions import (
     CredentialsNotFoundError,
     CredentialsValidationError,
 )
-from infra_core.core.path import PathManager, DEFAULT_PATH_CONFIG
+from infra_core.core.path import PathManager, PathConfig
 
 T = TypeVar("T", bound=BaseCredentials)
 
@@ -209,7 +209,7 @@ class CredentialsLoader:
             True
         """
         try:
-            manager = PathManager(DEFAULT_PATH_CONFIG)
+            manager = PathManager(PathConfig.getDefault())
 
             key_path: Path = manager.getPath("secret_key")
             credentials_path: Path = manager.getPath("credentials", name)

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass, field
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, ClassVar, Optional
 from infra_core.core.path import exceptions
 
 # ============================================================
@@ -27,8 +27,8 @@ class PathConfig:
     - Global synchronized configuration
     - Strong validation and domain-specific exceptions
 
-    :param root_markers: Optional[Tuple[str, ...]] = Root detection markers
-    :param directories: Optional[Dict[str, str]] = Directory mapping overrides
+    :param root_markers: root_markers: Tuple[str, ...] = field(default_factory=tuple) = Root detection markers
+    :param directories: Dict[str, str] = field(default_factory=dict) = Directory mapping overrides
 
     :example:
         >>> config = PathConfig()
@@ -36,16 +36,16 @@ class PathConfig:
         'secret'
     """
 
-    root_markers: Optional[Tuple[str, ...]] = None
+    root_markers: Tuple[str, ...] = field(default_factory=tuple)
 
     _secret_dir_name: str = field(default="secret_dir", repr=False)
     _secret_key_name: str = field(default="secret_key", repr=False)
     _credentials_dir_name: str = field(default="credentials", repr=False)
     _download_dir_name: str = field(default="downloads", repr=False)
 
-    directories: Optional[Dict[str, str]] = None
+    directories: Dict[str, str] = field(default_factory=dict)
 
-    _default_instance: PathConfig = None
+    _default_instance: ClassVar[Optional["PathConfig"]] = None
 
     # ============================================================
     # Initialization
@@ -53,7 +53,13 @@ class PathConfig:
 
     def __post_init__(self) -> None:
         """
-        Initializes root markers and directory mappings.
+        Initializes root markers and directory mappings with dependency-aware resolution.
+
+        Resolution rules:
+        - User-provided directories are the source of truth
+        - Dependent directories are recalculated based on secret_dir
+        - Explicit user overrides are always respected
+        - No directory is silently overridden
 
         :raises PathValidationError:
             When configuration is invalid
@@ -64,10 +70,15 @@ class PathConfig:
             True
         """
         try:
+            # ============================================================
+            # Validate internal keys
+            # ============================================================
             self._validateKeys()
 
+            # ============================================================
             # Root markers
-            if self.root_markers is None:
+            # ============================================================
+            if not self.root_markers:
                 object.__setattr__(
                     self,
                     "root_markers",
@@ -76,28 +87,61 @@ class PathConfig:
             else:
                 self._validateRootMarkers(self.root_markers)
 
-            # Directories (dependency-aware)
-            base_dir: str = (
-                self.directories.get(self._secret_dir_name)
-                if self.directories and self._secret_dir_name in self.directories
-                else "secret"
-            )
+            # ============================================================
+            # Directories
+            # ============================================================
 
-            directories: Dict[str, str] = self._buildDependentDirectories(base_dir)
+            input_dirs: Dict[str, str] = {
+                self._secret_dir_name: "secret",
+                self._download_dir_name: "downloads",
+                **self.directories,
+            }
 
-            if self.directories:
-                for key, value in self.directories.items():
-                    if key not in directories:
-                        directories[key] = value
+            # 1. Resolve base_dir
+            base_dir: str = input_dirs.get(self._secret_dir_name, "secret")
 
-            object.__setattr__(self, "directories", directories)
+            # 2. Compute derived
+            derived_dirs: Dict[str, str] = self._buildDependentDirectories(base_dir)
+
+            # 3. Final começa com input
+            final_dirs: Dict[str, str] = dict(input_dirs)
+
+            # 4. Corrigir derivados
+            for key in (self._secret_key_name, self._credentials_dir_name):
+                current_value = input_dirs.get(key)
+
+                expected_old = self._buildDependentDirectories("secret")[key]
+                expected_new = derived_dirs[key]
+
+                # Se o valor atual ainda segue o padrão antigo → recalcula
+                if current_value == expected_old:
+                    final_dirs[key] = expected_new
+
+                # Se usuário não definiu → também calcula
+                elif current_value is None:
+                    final_dirs[key] = expected_new
+
+                # senão: usuário sobrescreveu → respeita
+
+            # 5. Guarantee base_dir consistency
+            final_dirs[self._secret_dir_name] = base_dir
+
+            object.__setattr__(self, "directories", final_dirs)
 
         except exceptions.PathConfigError:
             raise
 
         except Exception as exc:
-            raise exceptions.PathValidationError(self._buildError(str(exc))) from exc
+            raise exceptions.PathValidationError(
+                self._buildError(str(exc))
+            ) from exc
 
+
+    def _getDerivedKeys(self) -> Tuple[str, ...]:
+        return (
+            self._secret_key_name,
+            self._credentials_dir_name,
+        )
     # ============================================================
     # Properties
     # ============================================================
@@ -386,15 +430,18 @@ class PathConfig:
 
         :param message: str
         :return: str
-
-        :example:
-            >>> config = PathConfig()
-            >>> "Class" in config._buildError("x")
-            True
         """
+        frame = inspect.currentframe()
+
+        method = (
+            frame.f_back.f_code.co_name
+            if frame is not None and frame.f_back is not None
+            else "unknown"
+        )
+
         return (
             f"Class: {self.__class__.__name__}\n"
-            f"Method: {inspect.currentframe().f_back.f_code.co_name}\n"
+            f"Method: {method}\n"
             f"Error: {message}"
         )
 
@@ -427,10 +474,10 @@ class _DefaultPathConfigProxy:
         True
     """
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str) -> object:
         return getattr(PathConfig.getDefault(), item)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(PathConfig.getDefault())
 
 
@@ -442,10 +489,10 @@ DEFAULT_PATH_CONFIG = _DefaultPathConfigProxy()
 # ============================================================
 
 if __name__ == "__main__":
-    config = DEFAULT_PATH_CONFIG
 
-    print("Roots:", config.root_markers)
-    print("Dirs:", config.directories)
+    config = PathConfig.getDefault()
+    print(f'{config.root_markers=}')
+    print(f'{config.directories=}')
 
     config = config.addDirectory("logs", "logs")
     print("After add dir:", config.directories)

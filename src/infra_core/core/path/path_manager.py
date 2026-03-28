@@ -118,7 +118,7 @@ class PathManager:
 if __name__ == "__main__":
     from infra_core.core.path.path_config import DEFAULT_PATH_CONFIG
 
-    manager = PathManager(DEFAULT_PATH_CONFIG)
+    manager = PathManager(PathConfig.getDefault())
 
     print("Root:", manager.getRoot())
     print("Credentials:", manager.getPath("credentials"))
