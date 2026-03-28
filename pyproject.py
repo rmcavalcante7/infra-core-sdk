@@ -149,7 +149,6 @@ def generatePyproject(
                 ],
                 "build-backend": "setuptools.build_meta",
             },
-
             # ============================================================
             # PROJECT METADATA
             # ============================================================
@@ -162,43 +161,29 @@ def generatePyproject(
                 "authors": [{"name": author}],
                 "dependencies": dependencies,
                 "optional-dependencies": {
-                    "dev": DEV_DEPENDENCIES + [
+                    "dev": DEV_DEPENDENCIES
+                    + [
                         "build",
                         "twine",
                     ]
                 },
             },
-
             # ============================================================
             # TOOL CONFIGS
             # ============================================================
             "tool": {
-                "setuptools": {
-                    "packages": {"find": {"where": ["src"]}}
-                },
-
+                "setuptools": {"packages": {"find": {"where": ["src"]}}},
                 # 🔥 VERSIONAMENTO AUTOMÁTICO
                 "setuptools_scm": {
                     "version_scheme": "post-release",
                     "local_scheme": "no-local-version",
                 },
-
                 # 🔥 BLACK
-                "black": {
-                    "line-length": 88
-                },
-
+                "black": {"line-length": 88},
                 # 🔥 MYPY
-                "mypy": {
-                    "strict": True
-                },
-
+                "mypy": {"strict": True},
                 # 🔥 PYTEST
-                "pytest": {
-                    "ini_options": {
-                        "testpaths": ["tests"]
-                    }
-                },
+                "pytest": {"ini_options": {"testpaths": ["tests"]}},
             },
         }
 

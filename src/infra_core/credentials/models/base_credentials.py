@@ -9,13 +9,13 @@ from dataclasses import dataclass, fields
 from typing import Any, Dict, Type, TypeVar
 
 
-
 from infra_core.credentials.exceptions.credentials_exceptions import (
     CredentialsValidationError,
     CredentialsSerializationError,
 )
 
 T = TypeVar("T", bound="BaseCredentials")
+
 
 def getCurrentMethodName() -> str:
     import inspect

@@ -12,10 +12,10 @@ from dataclasses import dataclass, field
 from typing import Dict, Tuple, Optional
 from infra_core.core.path import exceptions
 
-
 # ============================================================
 # Core Data Structure
 # ============================================================
+
 
 @dataclass(frozen=True)
 class PathConfig:
@@ -96,9 +96,7 @@ class PathConfig:
             raise
 
         except Exception as exc:
-            raise exceptions.PathValidationError(
-                self._buildError(str(exc))
-            ) from exc
+            raise exceptions.PathValidationError(self._buildError(str(exc))) from exc
 
     # ============================================================
     # Properties
@@ -417,6 +415,7 @@ class PathConfig:
 # ============================================================
 # Default Configuration (Proxy)
 # ============================================================
+
 
 class _DefaultPathConfigProxy:
     """

@@ -3,6 +3,7 @@
 # - inspect
 # ============================================================
 
+
 def getCurrentMethodName() -> str:
     import inspect
 
@@ -10,6 +11,7 @@ def getCurrentMethodName() -> str:
     if frame and frame.f_back:
         return frame.f_back.f_code.co_name
     return "unknown"
+
 
 class CredentialsError(Exception):
     """
@@ -136,10 +138,7 @@ def buildExceptionMessage(class_name: str) -> str:
         >>> "Class: TestClass" in msg
         True
     """
-    return (
-        f"Class: {class_name}\n"
-        f"Method: {getCurrentMethodName()}\n"
-    )
+    return f"Class: {class_name}\n" f"Method: {getCurrentMethodName()}\n"
 
 
 # ============================================================

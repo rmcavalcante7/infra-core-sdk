@@ -144,7 +144,7 @@ class CredentialsService:
 
             return credentials_class.fromDict(decrypted_data)
 
-        except (FileNotFoundError, json.JSONDecodeError):
+        except FileNotFoundError, json.JSONDecodeError:
             raise
 
         except Exception as exc:

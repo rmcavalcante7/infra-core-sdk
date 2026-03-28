@@ -98,7 +98,6 @@ class CredentialsLoader:
                 print("DEBUG: USING ENV")
                 return env_credentials
 
-
             # ====================================================
             # 2. FALLBACK → FILE
             # ====================================================
@@ -175,7 +174,9 @@ class CredentialsLoader:
             ) from exc
 
     @staticmethod
-    def _loadFromFile(credentials_class: Type[T], encryption_service: Type[Any], name: str) -> T:
+    def _loadFromFile(
+        credentials_class: Type[T], encryption_service: Type[Any], name: str
+    ) -> T:
         """
         Load credentials from encrypted file storage.
 
@@ -274,6 +275,6 @@ if __name__ == "__main__":
     class ExampleCredentials(BaseCredentials):
         api_token: str
 
-    creds = CredentialsLoader.load(ExampleCredentials, MockEncryption(), name='test')
+    creds = CredentialsLoader.load(ExampleCredentials, MockEncryption(), name="test")
 
     print("Loaded:", creds)

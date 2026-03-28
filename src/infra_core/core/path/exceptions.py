@@ -5,10 +5,10 @@
 
 import inspect
 
-
 # ============================================================
 # Base Exceptions
 # ============================================================
+
 
 class PathConfigError(Exception):
     """
@@ -42,12 +42,14 @@ class PathValidationError(PathConfigError):
         ...     True
         True
     """
+
     pass
 
 
 # ============================================================
 # Directory Exceptions
 # ============================================================
+
 
 class DirectoryAlreadyExistsError(PathConfigError):
     """
@@ -64,9 +66,7 @@ class DirectoryAlreadyExistsError(PathConfigError):
     """
 
     def __init__(self, key: str) -> None:
-        message = (
-            f"Directory '{key}' already exists."
-        )
+        message = f"Directory '{key}' already exists."
         super().__init__(message)
 
 
@@ -85,9 +85,7 @@ class DirectoryNotFoundError(PathConfigError):
     """
 
     def __init__(self, key: str) -> None:
-        message = (
-            f"Directory '{key}' not found."
-        )
+        message = f"Directory '{key}' not found."
         super().__init__(message)
 
 
@@ -107,9 +105,7 @@ class InvalidDirectoryPathError(PathConfigError):
     """
 
     def __init__(self, key: str, path: str) -> None:
-        message = (
-            f"Invalid path for directory '{key}': '{path}'"
-        )
+        message = f"Invalid path for directory '{key}': '{path}'"
         super().__init__(message)
 
 
@@ -117,10 +113,12 @@ class InvalidDirectoryPathError(PathConfigError):
 # Root Marker Exceptions
 # ============================================================
 
+
 class RootMarkerError(PathConfigError):
     """
     Base exception for root marker operations.
     """
+
     pass
 
 
@@ -166,6 +164,7 @@ class InvalidRootMarkerError(RootMarkerError):
 # Dependency / Resolution Exceptions
 # ============================================================
 
+
 class PathDependencyError(PathConfigError):
     """
     Raised when dependent directory resolution fails.
@@ -177,6 +176,7 @@ class PathDependencyError(PathConfigError):
         ...     True
         True
     """
+
     pass
 
 
@@ -191,4 +191,5 @@ class PathResolutionError(PathConfigError):
         ...     True
         True
     """
+
     pass
