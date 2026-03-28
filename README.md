@@ -46,8 +46,8 @@ from infra_core.credentials.setup.credentials_setup_service import CredentialsSe
 setup = CredentialsSetupService(FernetEncryption)
 
 setup.setup(
-    MyCreds(api_token="123"),
-    name="pipefy"
+    MyCreds(api_token="1234"),
+    name="system1"
 )
 ```
 

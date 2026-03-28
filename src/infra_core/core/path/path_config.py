@@ -487,7 +487,6 @@ DEFAULT_PATH_CONFIG = _DefaultPathConfigProxy()
 # ============================================================
 
 if __name__ == "__main__":
-
     config = PathConfig.getDefault()
     print(f"{config.root_markers=}")
     print(f"{config.directories=}")
