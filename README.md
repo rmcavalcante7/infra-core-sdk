@@ -1,6 +1,9 @@
 # 🔐 infra-core-sdk
 
-Secure and extensible credential management SDK for Python applications.
+[![PyPI version](https://img.shields.io/pypi/v/infra-core-sdk.svg)](https://pypi.org/project/infra-core-sdk/)
+[![Python](https://img.shields.io/pypi/pyversions/infra-core-sdk.svg)](https://pypi.org/project/infra-core-sdk/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 
 ---
 
@@ -10,6 +13,7 @@ Secure and extensible credential management SDK for Python applications.
 * 📦 Multiple credential support (`name`)
 * ⚙️ Decoupled setup and load flows
 * 📁 Automatic path management
+* 🧠 Dynamic path configuration (PathConfig)
 * 🧩 Modular and extensible architecture
 
 ---
@@ -89,6 +93,98 @@ setup.setup(..., name="stripe")
 
 ---
 
+# ⚙️ Path Configuration (Advanced)
+
+The SDK provides a powerful and dynamic configuration system via `PathConfig`.
+
+---
+
+## 🔧 Basic usage
+
+```python
+from infra_core import PathConfig
+
+config = PathConfig.getDefault()
+
+print(config.root_markers)
+print(config.directories)
+```
+
+---
+
+## ➕ Add custom directory
+
+```python
+config = config.addDirectory("logs", "logs")
+print(config.directories)
+```
+
+---
+
+## 🔄 Update directories
+
+```python
+config = config.updateDirectory(config.downloadKey, "new_downloads")
+print(config.directories)
+```
+
+---
+
+## 🔁 Dependency update (secret_dir)
+
+```python
+config = config.updateDirectory(config.secretDirKey, "new_secret")
+print(config.directories)
+```
+
+Derived directories are automatically updated:
+
+- secret_key
+- credentials
+
+---
+
+## 🌱 Root marker management
+
+```python
+config = config.addRootMarker(".custom")
+print(config.root_markers)
+
+config = config.removeRootMarker(".custom")
+print(config.root_markers)
+```
+
+---
+
+## 🧪 Full example
+
+```python
+from infra_core import PathConfig
+
+if __name__ == "__main__":
+    config = PathConfig.getDefault()
+
+    print(f"{config.root_markers=}")
+    print(f"{config.directories=}")
+
+    config = config.addDirectory("logs", "logs")
+    print("After add dir:", config.directories)
+
+    config = config.updateDirectory(config.downloadKey, "new_downloads")
+    print("After update dir:", config.directories)
+
+    config = config.updateDirectory(config.secretDirKey, "new_secret")
+    print("After update dir:", config.directories)
+
+    config = config.addRootMarker(".custom")
+    print("After add root:", config.root_markers)
+
+    config = config.removeRootMarker(".custom")
+    print("After remove root:", config.root_markers)
+```
+
+---
+
 ## 🔐 Encryption
 
 ### Default
@@ -152,6 +248,7 @@ LOAD:
 ```bash
 pip install -e .[dev]
 pytest
+mypy src/
 ```
 
 ---
