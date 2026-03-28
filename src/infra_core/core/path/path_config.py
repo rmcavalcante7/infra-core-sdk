@@ -132,16 +132,14 @@ class PathConfig:
             raise
 
         except Exception as exc:
-            raise exceptions.PathValidationError(
-                self._buildError(str(exc))
-            ) from exc
-
+            raise exceptions.PathValidationError(self._buildError(str(exc))) from exc
 
     def _getDerivedKeys(self) -> Tuple[str, ...]:
         return (
             self._secret_key_name,
             self._credentials_dir_name,
         )
+
     # ============================================================
     # Properties
     # ============================================================
@@ -491,8 +489,8 @@ DEFAULT_PATH_CONFIG = _DefaultPathConfigProxy()
 if __name__ == "__main__":
 
     config = PathConfig.getDefault()
-    print(f'{config.root_markers=}')
-    print(f'{config.directories=}')
+    print(f"{config.root_markers=}")
+    print(f"{config.directories=}")
 
     config = config.addDirectory("logs", "logs")
     print("After add dir:", config.directories)
