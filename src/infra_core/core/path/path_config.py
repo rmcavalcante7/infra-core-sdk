@@ -53,7 +53,13 @@ class PathConfig:
 
     def __post_init__(self) -> None:
         """
-        Initializes root markers and directory mappings.
+        Initializes root markers and directory mappings with dependency-aware resolution.
+
+        Resolution rules:
+        - Ensures required base directories exist
+        - Recalculates derived directories based on secret_dir
+        - Preserves user overrides for non-derived directories
+        - Detects and updates only non-overridden derived values
 
         :raises PathValidationError:
             When configuration is invalid
@@ -64,9 +70,14 @@ class PathConfig:
             True
         """
         try:
+            # ============================================================
+            # Validate internal keys
+            # ============================================================
             self._validateKeys()
 
+            # ============================================================
             # Root markers
+            # ============================================================
             if self.root_markers is None:
                 object.__setattr__(
                     self,
@@ -76,21 +87,37 @@ class PathConfig:
             else:
                 self._validateRootMarkers(self.root_markers)
 
-            # Directories (dependency-aware)
-            base_dir: str = (
-                self.directories.get(self._secret_dir_name)
-                if self.directories and self._secret_dir_name in self.directories
-                else "secret"
-            )
+            # ============================================================
+            # Directories (dependency-aware resolution)
+            # ============================================================
 
-            directories: Dict[str, str] = self._buildDependentDirectories(base_dir)
+            input_dirs: Dict[str, str] = dict(self.directories or {})
 
-            if self.directories:
-                for key, value in self.directories.items():
-                    if key not in directories:
-                        directories[key] = value
+            # Ensure required base directories
+            if self._secret_dir_name not in input_dirs:
+                input_dirs[self._secret_dir_name] = "secret"
 
-            object.__setattr__(self, "directories", directories)
+            if self._download_dir_name not in input_dirs:
+                input_dirs[self._download_dir_name] = "downloads"
+
+            base_dir: str = input_dirs[self._secret_dir_name]
+
+            # Build derived directories
+            derived_dirs: Dict[str, str] = self._buildDependentDirectories(base_dir)
+
+            final_dirs: Dict[str, str] = dict(input_dirs)
+
+            # Recalculate derived directories ONLY if not manually overridden
+            for key in (self._secret_key_name, self._credentials_dir_name):
+                current_value: Optional[str] = input_dirs.get(key)
+
+                expected_default: str = self._buildDependentDirectories("secret")[key]
+                expected_new: str = derived_dirs[key]
+
+                if current_value is None or current_value == expected_default:
+                    final_dirs[key] = expected_new
+
+            object.__setattr__(self, "directories", final_dirs)
 
         except exceptions.PathConfigError:
             raise
@@ -166,13 +193,13 @@ class PathConfig:
 
         :param key: str = Directory key
         :param path: str = Directory path
-        :return: PathConfig
+        :return: PathConfig = Updated configuration instance
 
         :raises DirectoryAlreadyExistsError:
-            When key already exists
+            When the key already exists
 
         :raises InvalidDirectoryPathError:
-            When path is invalid
+            When the provided path is invalid
 
         :example:
             >>> config = PathConfig()
@@ -184,10 +211,10 @@ class PathConfig:
         if not path:
             raise exceptions.InvalidDirectoryPathError(key, path)
 
-        new_dirs = dict(self.directories)
+        new_dirs: Dict[str, str] = dict(self.directories)
         new_dirs[key] = path
 
-        new_config = PathConfig(
+        new_config: PathConfig = PathConfig(
             root_markers=self.root_markers,
             directories=new_dirs,
         )
@@ -197,17 +224,20 @@ class PathConfig:
 
     def updateDirectory(self, key: str, path: str) -> PathConfig:
         """
-        Updates a directory and propagates dependency recalculation.
+        Updates a directory mapping and propagates dependency recalculation.
+
+        This method updates a directory and ensures that dependent directories
+        are recalculated when necessary.
 
         :param key: str = Directory key
-        :param path: str = New path
-        :return: PathConfig
+        :param path: str = New directory path
+        :return: PathConfig = Updated configuration instance
 
         :raises DirectoryNotFoundError:
-            When key does not exist
+            When the specified key does not exist
 
         :raises InvalidDirectoryPathError:
-            When path is invalid
+            When the provided path is invalid
 
         :example:
             >>> config = PathConfig()
@@ -219,10 +249,10 @@ class PathConfig:
         if not path:
             raise exceptions.InvalidDirectoryPathError(key, path)
 
-        new_dirs = dict(self.directories)
+        new_dirs: Dict[str, str] = dict(self.directories)
         new_dirs[key] = path
 
-        new_config = PathConfig(
+        new_config: PathConfig = PathConfig(
             root_markers=self.root_markers,
             directories=new_dirs,
         )
@@ -345,10 +375,12 @@ class PathConfig:
 
     def _buildDependentDirectories(self, base_dir: str) -> Dict[str, str]:
         """
-        Builds dependent directory structure.
+        Builds dependent directory structure based on a base directory.
 
-        :param base_dir: str
-        :return: Dict[str, str]
+        This method defines derived directories that depend on the base secret directory.
+
+        :param base_dir: str = Base directory path
+        :return: Dict[str, str] = Mapping of derived directories
 
         :example:
             >>> config = PathConfig()
@@ -359,7 +391,6 @@ class PathConfig:
             self._secret_dir_name: base_dir,
             self._secret_key_name: f"{base_dir}/secret.key",
             self._credentials_dir_name: f"{base_dir}/{{name}}.json",
-            self._download_dir_name: "downloads",
         }
 
     def _buildDefaultRootMarkers(self) -> Tuple[str, ...]:
