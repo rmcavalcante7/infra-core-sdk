@@ -94,13 +94,11 @@ LOAD:
 
 ---
 
-# 🚀 Complete Example (Recommended Starting Point)
+🚀 Complete Example (Recommended Starting Point)
 
-This is the **canonical usage**:
+This is the canonical usage:
 
-```python
-# See full version in casos_de_uso/setup.py
-```
+👉 https://github.com/rmcavalcante7/infra-core-sdk/blob/main/casos_de_uso/setup.py
 
 ---
 
