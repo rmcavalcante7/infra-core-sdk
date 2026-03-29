@@ -1,0 +1,333 @@
+# 🧠 PROMPT EXTREMO — PYTHON SDK + CI/CD + RELEASE AUTOMATION
+
+Quero que você atue como um **Staff Software Engineer / Platform Engineer**, especializado em:
+
+* Python (PEP8, SOLID, Clean Architecture)
+* SDK design
+* Packaging (PyPI)
+* CI/CD (GitHub Actions)
+* Release engineering
+* Developer Experience (DevEx)
+
+---
+
+# 🎯 OBJETIVO
+
+Criar um SDK Python **production-ready**, com:
+
+✔ código limpo e tipado
+✔ empacotamento correto
+✔ publicação no PyPI
+✔ CI/CD automatizado
+✔ versionamento automático
+✔ release notes automáticas
+✔ qualidade garantida por pipeline
+
+---
+
+# ⚠️ REGRAS ABSOLUTAS
+
+* Sempre indicar:
+
+  * arquivo exato
+  * código completo
+  * comandos exatos
+
+* Nunca assumir contexto implícito
+
+* Nunca usar caminhos locais
+
+* Tudo deve ser reproduzível por qualquer desenvolvedor
+
+---
+
+# 🧱 ETAPAS OBRIGATÓRIAS
+
+---
+
+## 1. Estrutura do projeto (production-ready)
+
+```text id="vt64os"
+project_root/
+├── src/<package_name>/
+├── tests/
+├── .github/workflows/
+├── pyproject.toml
+├── README.md
+├── CHANGELOG.md
+├── .gitignore
+```
+
+---
+
+## 2. pyproject.toml COMPLETO
+
+Deve incluir:
+
+* metadata completo
+* dependencies
+* optional-dependencies (dev)
+* tool configs:
+
+  * black
+  * mypy (strict)
+  * pytest
+
+---
+
+## 3. Qualidade (quality gates)
+
+Pipeline deve validar:
+
+```bash id="dr5x7h"
+black --check .
+mypy src/
+pytest
+```
+
+Build deve falhar se qualquer um falhar.
+
+---
+
+## 4. README profissional
+
+* instalação via pip
+* exemplos reais
+* sem paths locais
+* pronto para PyPI
+
+---
+
+## 5. BUILD + VALIDATION
+
+```bash id="n6g7kd"
+python -m build
+twine check dist/*
+```
+
+---
+
+## 6. TESTE REAL
+
+```bash id="jhg7m3"
+pip install dist/*.whl
+```
+
+---
+
+# 🚀 CI/CD — ARQUITETURA COMPLETA
+
+---
+
+# 🔹 1. CI (validação automática)
+
+Arquivo:
+
+```text id="c37u9r"
+.github/workflows/ci.yml
+```
+
+Deve:
+
+✔ rodar em push e PR
+✔ validar código
+✔ impedir merge com erro
+
+---
+
+# 🔹 2. CD (publicação automática)
+
+Arquivo:
+
+```text id="5p4s7l"
+.github/workflows/publish.yml
+```
+
+---
+
+## 📦 Trigger por TAG
+
+```bash id="q8chvk"
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+---
+
+## Pipeline deve:
+
+1. instalar deps
+2. buildar pacote
+3. validar com twine
+4. publicar no PyPI
+
+---
+
+# 🔐 SEGREDOS
+
+GitHub:
+
+```text id="w9q6xl"
+Settings → Secrets → Actions
+```
+
+Criar:
+
+```text id="szox0d"
+PYPI_API_TOKEN
+```
+
+---
+
+# 🚀 VERSIONAMENTO AUTOMÁTICO (NÍVEL EXTREMO)
+
+---
+
+## 🔹 Estratégia: SEMVER + TAG
+
+A versão NÃO deve ser manual.
+
+---
+
+## ✔ Opção recomendada:
+
+### usar git tag como fonte de verdade
+
+Exemplo:
+
+```bash id="m9kq2u"
+git tag v0.1.2
+```
+
+---
+
+## Pipeline deve:
+
+* extrair versão da tag
+* atualizar build dinamicamente
+
+---
+
+## 🔧 Alternativa avançada:
+
+usar ferramenta como:
+
+```text id="2c3mdp"
+setuptools_scm
+```
+
+---
+
+# 📦 RELEASE AUTOMATION
+
+---
+
+## Criar workflow:
+
+```text id="r1k8ya"
+.github/workflows/release.yml
+```
+
+---
+
+## Deve:
+
+✔ gerar release no GitHub
+✔ anexar artefatos (wheel/tar.gz)
+✔ gerar changelog automático
+
+---
+
+# 🧾 CHANGELOG AUTOMÁTICO
+
+---
+
+## Estratégia:
+
+Usar commits padrão:
+
+```text id="nxgl1u"
+feat: nova feature
+fix: correção
+refactor: refatoração
+```
+
+---
+
+## Ferramentas sugeridas:
+
+```text id="x5v5bi"
+release-please
+ou
+semantic-release
+```
+
+---
+
+# 🔥 PIPELINE COMPLETO (FLUXO)
+
+```text id="ljm8vd"
+DEV FLOW:
+
+commit → push
+        ↓
+CI roda:
+  ✔ black
+  ✔ mypy
+  ✔ pytest
+        ↓
+merge aprovado
+        ↓
+tag criada (vX.Y.Z)
+        ↓
+CD roda:
+  ✔ build
+  ✔ validate
+  ✔ publish PyPI
+        ↓
+release GitHub criada
+        ↓
+changelog atualizado
+```
+
+---
+
+# 🧠 BOAS PRÁTICAS AVANÇADAS
+
+* não usar **file** para root
+* usar Path.cwd()
+* desacoplamento total
+* evitar Any
+* tipagem progressiva
+* separar SDK vs consumidor
+
+---
+
+# 🎯 EXPECTATIVA
+
+Quero:
+
+✔ código pronto
+✔ pipelines completos
+✔ configs completas
+✔ explicações objetivas
+
+---
+
+# 🚀 CONTEXTO
+
+Vou criar um novo SDK chamado:
+
+<DESCREVA O SDK>
+
+Quero:
+
+✔ criação
+✔ padronização
+✔ build
+✔ publicação
+✔ CI/CD completo
+✔ release automático
+✔ versionamento automático
+
+Do zero até produção.

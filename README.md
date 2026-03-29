@@ -4,21 +4,42 @@
 [![Python](https://img.shields.io/pypi/pyversions/infra-core-sdk.svg)](https://pypi.org/project/infra-core-sdk/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+# 🔐 infra-core-sdk
+
+A production-ready SDK for:
+
+* Root-aware path resolution
+* Structured filesystem management
+* Secure credential storage (encrypted)
+* Pluggable encryption strategies
 
 ---
 
-## 🚀 Features
+# 🚀 Why this SDK exists
 
-* 🔐 Automatic encryption (Fernet)
-* 📦 Multiple credential support (`name`)
-* ⚙️ Decoupled setup and load flows
-* 📁 Automatic path management
-* 🧠 Dynamic path configuration (PathConfig)
-* 🧩 Modular and extensible architecture
+Managing paths, environments, and secrets across projects is hard.
+
+This SDK solves:
+
+* ❌ Hardcoded paths
+* ❌ Environment inconsistencies
+* ❌ Unsafe credential storage
+* ❌ Scattered filesystem logic
 
 ---
 
-## 📦 Installation
+# ✨ Core Features
+
+* 📍 **Root-aware path resolution**
+* 📁 **Centralized path configuration**
+* 🔐 **Encrypted credential storage**
+* 🔄 **Multiple credential profiles**
+* ⚙️ **Pluggable encryption system**
+* 🧠 **Deterministic filesystem behavior**
+
+---
+
+# 📦 Installation
 
 ```bash
 pip install infra-core-sdk
@@ -26,46 +47,151 @@ pip install infra-core-sdk
 
 ---
 
-## 🧩 Usage
+# 🧠 Core Concepts (MUST READ)
 
-### 🔹 Define your credentials model
+## 🔹 1. Root Resolution
+
+The SDK determines your project root using markers:
+
+```text
+.git
+pyproject.toml
+requirements.txt
+```
+
+You can customize this.
+
+---
+
+## 🔹 2. Path System
+
+Every path is defined using:
+
+```python
+PathDefinition(path: str, use_root: bool)
+```
+
+| Type             | Behavior                 |
+| ---------------- | ------------------------ |
+| `use_root=True`  | relative to project root |
+| `use_root=False` | must be absolute         |
+
+---
+
+## 🔹 3. Credentials Flow
+
+```text
+SETUP:
+  → generate key
+  → encrypt data
+  → store file
+
+LOAD:
+  → read key
+  → decrypt data
+  → return typed object
+```
+
+---
+
+# 🚀 Complete Example (Recommended Starting Point)
+
+This is the **canonical usage**:
+
+```python
+# See full version in casos_de_uso/setup.py
+```
+
+---
+
+# 🧩 Step-by-Step Usage
+
+---
+
+## 1️⃣ Define your credentials model
 
 ```python
 from dataclasses import dataclass
-from infra_core import BaseCredentials
+from infra_core.credentials.models.base_credentials import BaseCredentials
 
 @dataclass(frozen=True)
-class MyCreds(BaseCredentials):
+class MyCredentials(BaseCredentials):
     api_token: str
 ```
 
 ---
 
-### 🔹 Save credentials (setup)
+## 2️⃣ Configure ROOT behavior
 
 ```python
-from infra_core import FernetEncryption
-from infra_core.credentials.setup.credentials_setup_service import CredentialsSetupService
+from infra_core.core.root.root_config import RootConfig
+from infra_core.core.root.root_config_provider import RootConfigProvider
+
+config = RootConfig(
+    markers=(
+        ".git",
+        "pyproject.toml",
+    )
+)
+
+RootConfigProvider.set(config)
+```
+
+---
+
+## 3️⃣ Configure Paths
+
+```python
+from infra_core.core.path.path_config import PathConfig
+from infra_core.core.path.path_config_provider import PathConfigProvider
+from infra_core.core.path.path_definition import PathDefinition
+from pathlib import Path
+
+config = PathConfig()
+
+# ROOT-based paths
+config = config.addPath("secrets", PathDefinition("secrets", use_root=True))
+config = config.addPath("secret_key", PathDefinition("secrets/key.key", use_root=True))
+config = config.addPath("credentials", PathDefinition("secrets/{name}.json", use_root=True))
+
+# Absolute path example
+absolute_logs = str(Path.cwd() / "logs/app")
+
+config = config.addPath(
+    "logs",
+    PathDefinition(absolute_logs, use_root=False),
+)
+
+PathConfigProvider.set(config)
+```
+
+---
+
+## 4️⃣ Setup credentials (ENCRYPT + SAVE)
+
+```python
+from infra_core import CredentialsSetupService
+from infra_core.security.fernet_encryption import FernetEncryption
 
 setup = CredentialsSetupService(FernetEncryption)
 
 setup.setup(
-    MyCreds(api_token="1234"),
-    name="system1"
+    MyCredentials(api_token="123"),
+    name="default",
 )
 ```
 
 ---
 
-### 🔹 Load credentials
+## 5️⃣ Load credentials
 
 ```python
-from infra_core import CredentialsLoader, FernetEncryption
+from infra_core import CredentialsLoader
 
 creds = CredentialsLoader.load(
-    MyCreds,
+    MyCredentials,
     FernetEncryption,
-    name="pipefy"
+    name="default",
 )
 
 print(creds.api_token)
@@ -73,129 +199,93 @@ print(creds.api_token)
 
 ---
 
-## 📁 Generated structure
+# 📁 Generated Structure
 
 ```text
-your_project/
-├── secret/
-│   ├── secret.key
-│   ├── pipefy.json
+project_root/
+├── secrets/
+│   ├── key.key
+│   ├── default.json
 ```
 
 ---
 
-## 🔄 Multiple credentials
+# 🔄 Multiple Credential Profiles
 
 ```python
 setup.setup(..., name="aws")
 setup.setup(..., name="stripe")
+setup.setup(..., name="internal")
 ```
 
 ---
 
-# ⚙️ Path Configuration (Advanced)
+# 📍 Path Management (Advanced)
 
-The SDK provides a powerful and dynamic configuration system via `PathConfig`.
-
----
-
-## 🔧 Basic usage
+## Get resolved paths
 
 ```python
-from infra_core import PathConfig
+from infra_core import PathManager
 
-config = PathConfig.getDefault()
+manager = PathManager()
 
-print(config.root_markers)
-print(config.directories)
+print(manager.getPath("secrets"))
+print(manager.getPath("credentials", name="default"))
 ```
 
 ---
 
-## ➕ Add custom directory
+## Ensure directories exist
 
 ```python
-config = config.addDirectory("logs", "logs")
-print(config.directories)
+manager.ensurePathExists("secrets")
 ```
 
 ---
 
-## 🔄 Update directories
+## Delete files or directories
 
 ```python
-config = config.updateDirectory(config.downloadKey, "new_downloads")
-print(config.directories)
+manager.deletePath("credentials", name="default")
 ```
 
 ---
 
-## 🔁 Dependency update (secret_dir)
+# 🧠 Root Customization
+
+## Add / remove markers
 
 ```python
-config = config.updateDirectory(config.secretDirKey, "new_secret")
-print(config.directories)
+from infra_core.core.root.root_config import RootConfig
+from infra_core.core.root.root_config_provider import RootConfigProvider
+
+config = RootConfig(markers=(".git", "pyproject.toml"))
+RootConfigProvider.set(config)
 ```
-
-Derived directories are automatically updated:
-
-- secret_key
-- credentials
 
 ---
 
-## 🌱 Root marker management
+## Debug root resolution
 
 ```python
-config = config.addRootMarker(".custom")
-print(config.root_markers)
+from infra_core.core.root.root_resolver import RootResolver
 
-config = config.removeRootMarker(".custom")
-print(config.root_markers)
+print(RootResolver().resolve())
 ```
 
 ---
 
-## 🧪 Full example
+# 🔐 Encryption
+
+## Default (recommended)
 
 ```python
-from infra_core import PathConfig
-
-if __name__ == "__main__":
-    config = PathConfig.getDefault()
-
-    print(f"{config.root_markers=}")
-    print(f"{config.directories=}")
-
-    config = config.addDirectory("logs", "logs")
-    print("After add dir:", config.directories)
-
-    config = config.updateDirectory(config.downloadKey, "new_downloads")
-    print("After update dir:", config.directories)
-
-    config = config.updateDirectory(config.secretDirKey, "new_secret")
-    print("After update dir:", config.directories)
-
-    config = config.addRootMarker(".custom")
-    print("After add root:", config.root_markers)
-
-    config = config.removeRootMarker(".custom")
-    print("After remove root:", config.root_markers)
+from infra_core.security.fernet_encryption import FernetEncryption
 ```
 
 ---
 
-## 🔐 Encryption
-
-### Default
-
-```python
-from infra_core import FernetEncryption
-```
-
----
-
-### Custom implementation
+## Custom encryption
 
 ```python
 class CustomEncryption:
@@ -208,57 +298,84 @@ class CustomEncryption:
 
 ---
 
-## ⚠️ Important rules
+# ⚠️ Important Rules
 
-### ❌ Do NOT manually create keys
+## ❌ Do NOT manually manage keys
 
 ```python
 Fernet.generate_key()
-FernetEncryption(key)
 ```
 
 ---
 
-### ✅ Let the SDK manage it
+## ✅ Always use setup service
 
 ```python
-CredentialsSetupService(FernetEncryption)
+CredentialsSetupService(...)
 ```
 
 ---
 
-## 🧠 How it works
+## ❌ Do NOT use relative paths with use_root=False
 
-```text
-SETUP:
-    → generates key
-    → encrypts data
-    → saves file
-
-LOAD:
-    → reads key
-    → decrypts data
-    → returns typed object
+```python
+PathDefinition("logs", use_root=False)  # INVALID
 ```
 
 ---
 
-## 🧪 Development
+## ✅ Use absolute paths
+
+```python
+PathDefinition(str(Path.cwd() / "logs"), use_root=False)
+```
+
+---
+
+# 🧪 Development
 
 ```bash
 pip install -e .[dev]
 pytest
 mypy src/
+black .
 ```
 
 ---
 
-## 📄 License
+# 🧠 Architecture Overview
+
+```text
+core/
+  path/
+  root/
+
+credentials/
+  service
+  loader
+  setup
+
+security/
+  encryption
+```
+
+---
+
+# 📦 Build & Publish
+
+```bash
+python -m build
+twine check dist/*
+```
+
+---
+
+# 📄 License
 
 MIT
 
 ---
 
-## 👨‍💻 Author
+# 👨‍💻 Author
 
 Rafael Cavalcante

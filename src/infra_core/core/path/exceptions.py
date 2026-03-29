@@ -1,195 +1,155 @@
 # ============================================================
 # Dependencies:
-# - inspect
+# - typing
 # ============================================================
 
-import inspect
+from typing import Any, Dict, Optional
 
-# ============================================================
-# Base Exceptions
-# ============================================================
+from infra_core.exceptions.base import SDKError
 
 
-class PathConfigError(Exception):
+class PathError(SDKError):
     """
-    Base exception for all PathConfig-related errors.
-
-    This exception should not be raised directly.
-    Use specialized exceptions instead.
-
-    :param message: str = Error message
+    Base exception for path module.
 
     :example:
-        >>> try:
-        ...     raise PathConfigError("error")
-        ... except PathConfigError:
-        ...     True
-        True
+        >>> raise PathError(message="generic error")
     """
 
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
-
-
-class PathValidationError(PathConfigError):
-    """
-    Raised when configuration validation fails.
-
-    :example:
-        >>> try:
-        ...     raise PathValidationError("invalid")
-        ... except PathValidationError:
-        ...     True
-        True
-    """
-
-    pass
+    DEFAULT_CODE: str = "PATH_ERROR"
 
 
 # ============================================================
-# Directory Exceptions
+# Configuration Errors
 # ============================================================
 
 
-class DirectoryAlreadyExistsError(PathConfigError):
+class PathConfigError(PathError):
     """
-    Raised when attempting to add a directory that already exists.
-
-    :param key: str = Directory key
+    Raised when path configuration is invalid.
 
     :example:
-        >>> try:
-        ...     raise DirectoryAlreadyExistsError("logs")
-        ... except DirectoryAlreadyExistsError:
-        ...     True
-        True
+        >>> raise PathConfigError(message="invalid config")
     """
 
-    def __init__(self, key: str) -> None:
-        message = f"Directory '{key}' already exists."
-        super().__init__(message)
+    DEFAULT_CODE: str = "PATH_CONFIG_ERROR"
 
 
-class DirectoryNotFoundError(PathConfigError):
+class InvalidPathDefinitionError(PathConfigError):
     """
-    Raised when attempting to access or update a non-existent directory.
+    Raised when a path definition is invalid.
 
-    :param key: str = Directory key
-
-    :example:
-        >>> try:
-        ...     raise DirectoryNotFoundError("logs")
-        ... except DirectoryNotFoundError:
-        ...     True
-        True
-    """
-
-    def __init__(self, key: str) -> None:
-        message = f"Directory '{key}' not found."
-        super().__init__(message)
-
-
-class InvalidDirectoryPathError(PathConfigError):
-    """
-    Raised when a directory path is invalid.
-
-    :param key: str = Directory key
+    :param key: str = Path key
     :param path: str = Provided path
 
     :example:
-        >>> try:
-        ...     raise InvalidDirectoryPathError("logs", "")
-        ... except InvalidDirectoryPathError:
-        ...     True
-        True
+        >>> raise InvalidPathDefinitionError("logs", "")
     """
+
+    DEFAULT_CODE: str = "PATH_INVALID_DEFINITION"
 
     def __init__(self, key: str, path: str) -> None:
-        message = f"Invalid path for directory '{key}': '{path}'"
-        super().__init__(message)
+        super().__init__(
+            message="Invalid path definition",
+            context={
+                "key": key,
+                "path": path,
+            },
+        )
 
 
-# ============================================================
-# Root Marker Exceptions
-# ============================================================
-
-
-class RootMarkerError(PathConfigError):
+class PathAlreadyExistsError(PathConfigError):
     """
-    Base exception for root marker operations.
-    """
+    Raised when a path key already exists.
 
-    pass
-
-
-class RootMarkerNotFoundError(RootMarkerError):
-    """
-    Raised when attempting to remove a non-existent root marker.
-
-    :param marker: str
+    :param key: str
 
     :example:
-        >>> try:
-        ...     raise RootMarkerNotFoundError(".git")
-        ... except RootMarkerNotFoundError:
-        ...     True
-        True
+        >>> raise PathAlreadyExistsError("logs")
     """
 
-    def __init__(self, marker: str) -> None:
-        message = f"Root marker '{marker}' not found."
-        super().__init__(message)
+    DEFAULT_CODE: str = "PATH_ALREADY_EXISTS"
+
+    def __init__(self, key: str) -> None:
+        super().__init__(
+            message="Path already exists",
+            context={"key": key},
+        )
 
 
-class InvalidRootMarkerError(RootMarkerError):
+class PathNotFoundError(PathConfigError):
     """
-    Raised when a root marker is invalid.
+    Raised when a path key does not exist.
 
-    :param marker: str
+    :param key: str
 
     :example:
-        >>> try:
-        ...     raise InvalidRootMarkerError("")
-        ... except InvalidRootMarkerError:
-        ...     True
-        True
+        >>> raise PathNotFoundError("logs")
     """
 
-    def __init__(self, marker: str) -> None:
-        message = f"Invalid root marker: '{marker}'"
-        super().__init__(message)
+    DEFAULT_CODE: str = "PATH_NOT_FOUND"
+
+    def __init__(self, key: str) -> None:
+        super().__init__(
+            message="Path not found",
+            context={"key": key},
+        )
 
 
 # ============================================================
-# Dependency / Resolution Exceptions
+# Root Errors
 # ============================================================
 
 
-class PathDependencyError(PathConfigError):
+class RootError(PathError):
     """
-    Raised when dependent directory resolution fails.
+    Base exception for root resolution errors.
 
     :example:
-        >>> try:
-        ...     raise PathDependencyError("dependency error")
-        ... except PathDependencyError:
-        ...     True
-        True
+        >>> raise RootError(message="root error")
     """
 
-    pass
+    DEFAULT_CODE: str = "PATH_ROOT_ERROR"
 
 
-class PathResolutionError(PathConfigError):
+class RootResolutionError(RootError):
+    """
+    Raised when root resolution fails.
+
+    :example:
+        >>> raise RootResolutionError(message="failed")
+    """
+
+    DEFAULT_CODE: str = "PATH_ROOT_RESOLUTION_ERROR"
+
+
+# ============================================================
+# Resolution Errors
+# ============================================================
+
+
+class PathResolutionError(PathError):
     """
     Raised when path resolution fails.
 
+    :param key: str
+
     :example:
-        >>> try:
-        ...     raise PathResolutionError("error")
-        ... except PathResolutionError:
-        ...     True
-        True
+        >>> raise PathResolutionError("logs")
     """
 
-    pass
+    DEFAULT_CODE: str = "PATH_RESOLUTION_ERROR"
+
+    def __init__(
+        self,
+        key: str,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        base_context = {"key": key}
+        if context:
+            base_context.update(context)
+
+        super().__init__(
+            message="Failed to resolve path",
+            context=base_context,
+        )

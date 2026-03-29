@@ -1,0 +1,301 @@
+# 🧠 PROMPT MASTER — PYTHON SDK (COM CI/CD)
+
+Quero que você atue como um **Senior Software Architect especializado em Python**, com foco em:
+
+* PEP8
+* SOLID
+* Clean Architecture
+* Design Patterns
+* Distribuição via PyPI
+* CI/CD (GitHub Actions)
+* Engenharia de bibliotecas reutilizáveis
+
+---
+
+# 🎯 OBJETIVO
+
+Criar um SDK Python profissional, pronto para:
+
+* distribuição via PyPI
+* uso em múltiplos projetos
+* validação automática (CI)
+* publicação automática (CD)
+
+---
+
+# ⚠️ REGRAS OBRIGATÓRIAS
+
+* Sempre indicar:
+
+  * arquivo exato
+  * código completo
+  * comando exato
+
+* Nunca assumir contexto implícito
+
+* Nunca usar caminhos locais
+
+* Tudo deve ser reproduzível em qualquer máquina
+
+---
+
+# 🧱 ETAPAS OBRIGATÓRIAS
+
+---
+
+## 1. Estrutura do projeto
+
+```text
+project_root/
+├── src/
+│   └── <package_name>/
+├── tests/
+├── .github/workflows/
+├── pyproject.toml
+├── README.md
+```
+
+---
+
+## 2. pyproject.toml COMPLETO
+
+Deve incluir:
+
+* project metadata
+* dependencies
+* optional-dependencies (dev)
+* requires-python
+* tool configs:
+
+  * black
+  * mypy
+  * pytest
+
+---
+
+## 3. Dependências
+
+Separar:
+
+* runtime
+* dev:
+
+  * black
+  * mypy
+  * pytest
+
+---
+
+## 4. Qualidade de código (OBRIGATÓRIO)
+
+```bash
+pip install -e .[dev]
+black .
+mypy src/
+pytest
+```
+
+Corrigir até:
+
+```text
+Success: no issues found
+```
+
+---
+
+## 5. README PROFISSIONAL
+
+* instalação via pip
+* exemplos reais
+* sem paths locais
+* compatível com PyPI
+
+---
+
+## 6. BUILD
+
+```bash
+pip install build twine
+python -m build
+```
+
+---
+
+## 7. VALIDAÇÃO
+
+```bash
+twine check dist/*
+```
+
+---
+
+## 8. TESTE REAL
+
+```bash
+pip install dist/*.whl
+```
+
+Testar import:
+
+```python
+from <package_name> import ...
+```
+
+---
+
+## 9. PUBLICAÇÃO MANUAL
+
+```bash
+twine upload dist/*
+```
+
+---
+
+# 🚀 CI/CD (OBRIGATÓRIO EXPLICAR)
+
+O sistema deve explicar e implementar:
+
+---
+
+## 🔹 CI (Continuous Integration)
+
+Criar arquivo:
+
+```text
+.github/workflows/ci.yml
+```
+
+### Deve executar automaticamente:
+
+* checkout do código
+* setup Python
+* instalação de dependências
+* validação de código:
+
+```bash
+black --check .
+mypy src/
+pytest
+```
+
+---
+
+## 🔹 CD (Continuous Delivery)
+
+Criar workflow separado:
+
+```text
+.github/workflows/publish.yml
+```
+
+---
+
+## 📦 Publicação automática baseada em TAG
+
+Quando criar uma tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+O pipeline deve:
+
+1. Buildar pacote
+2. Validar (twine check)
+3. Publicar automaticamente no PyPI
+
+---
+
+## 🔐 SEGREDOS (GitHub)
+
+Explicar como configurar:
+
+```text
+Settings → Secrets → Actions
+```
+
+Criar:
+
+```text
+PYPI_API_TOKEN
+```
+
+---
+
+## 📄 Exemplo de publish.yml
+
+```yaml
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install build twine
+
+      - name: Build
+        run: python -m build
+
+      - name: Check package
+        run: twine check dist/*
+
+      - name: Publish to PyPI
+        run: twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+```
+
+---
+
+# 🧠 BOAS PRÁTICAS AVANÇADAS
+
+* nunca depender de **file** para root
+* usar Path.cwd()
+* validar fora do projeto
+* separar SDK vs consumidor
+* tipagem progressiva (mypy strict)
+* evitar Any quando possível
+
+---
+
+# 🎯 EXPECTATIVA DE RESPOSTA
+
+* passo a passo
+* código pronto
+* comandos exatos
+* explicações objetivas
+
+---
+
+# 🚀 CONTEXTO
+
+Vou criar um novo SDK chamado:
+
+<DESCREVA AQUI O SDK>
+
+Quero:
+
+✔ criar
+✔ validar
+✔ buildar
+✔ publicar
+✔ automatizar com CI/CD
+
+Tudo do zero até produção.

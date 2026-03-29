@@ -3,71 +3,77 @@
 # - json
 # - pathlib
 # - typing
-# - inspect
 # ============================================================
+
+from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, Type, TypeVar
+from typing import Dict, Type, TypeVar, Protocol, runtime_checkable
 
 from infra_core.credentials.models.base_credentials import BaseCredentials
-from infra_core.credentials.exceptions.credentials_exceptions import (
+from infra_core.credentials.credentials_exceptions import (
     CredentialsError,
     CredentialsSerializationError,
 )
-from typing import Protocol
 
 T = TypeVar("T", bound=BaseCredentials)
 
 
+@runtime_checkable
 class EncryptionProtocol(Protocol):
     """
     Contract for encryption services.
 
-    Any encryption implementation must provide:
+    Any implementation must provide:
     - encrypt
     - decrypt
+
+    :example:
+        >>> class Dummy:
+        ...     def encrypt(self, v): return v
+        ...     def decrypt(self, v): return v
+        ...
+        >>> d = Dummy()
+        >>> hasattr(d, "encrypt") and hasattr(d, "decrypt")
+        True
     """
 
     def encrypt(self, value: str) -> str: ...
-
     def decrypt(self, value: str) -> str: ...
 
 
 class CredentialsService:
     """
-    Generic service responsible for secure persistence and retrieval
-    of encrypted credentials.
-
-    This service is schema-agnostic and operates on any credentials model
-    that follows the BaseCredentials contract.
+    Service responsible for encryption and persistence of credentials.
 
     Responsibilities:
-    - Encrypt credentials before persistence
-    - Decrypt credentials during retrieval
-    - Maintain data integrity and consistency
+    - Encrypt before saving
+    - Decrypt after loading
+    - Ensure data integrity
 
-    Design considerations:
-    - Fully decoupled from credential structure
-    - Uses dependency injection for encryption
-    - Does not manage filesystem paths (delegated responsibility)
+    Important:
+    - Does NOT resolve paths
+    - Does NOT manage configuration
     """
 
     def __init__(self, encryption_service: EncryptionProtocol) -> None:
         """
-        Initialize the CredentialsService.
+        Initialize service.
 
-        :param encryption_service: EncryptionProtocol = Encryption handler implementation
+        :param encryption_service: EncryptionProtocol = Encryption implementation
+
+        :return: None
 
         :raises CredentialsError:
             When initialization fails
 
         :example:
-            >>> class DummyEncryption:
+            >>> class Dummy:
             ...     def encrypt(self, v): return v
             ...     def decrypt(self, v): return v
             ...
-            >>> service = CredentialsService(DummyEncryption())
+            >>> service = CredentialsService(Dummy())
             >>> isinstance(service, CredentialsService)
             True
         """
@@ -91,42 +97,33 @@ class CredentialsService:
         credentials_class: Type[T],
     ) -> T:
         """
-        Load and decrypt credentials from a file.
+        Load and decrypt credentials from file.
 
-        :param file_path: Path = Path to encrypted credentials file
-        :param credentials_class: Type[T] = Credentials model class
+        :param file_path: Path = File path
+        :param credentials_class: Type[T] = Credentials class
 
-        :return: T = Decrypted credentials instance
+        :return: T = Decrypted credentials
 
         :raises FileNotFoundError:
-            When credentials file does not exist
-
         :raises json.JSONDecodeError:
-            When file content is invalid JSON
-
         :raises CredentialsSerializationError:
-            When decryption or parsing fails
 
         :example:
             >>> from pathlib import Path
             >>> from dataclasses import dataclass
-            >>> from infra_core.credentials.models.base_credentials import BaseCredentials
-            >>> from infra_core.credentials.services.credentials_service import CredentialsService
-            >>>
-            >>> class DummyEncryption:
+            >>> class Dummy:
             ...     def encrypt(self, v): return v
             ...     def decrypt(self, v): return v
             ...
             >>> @dataclass(frozen=True)
-            ... class DummyCreds(BaseCredentials):
+            ... class C(BaseCredentials):
             ...     api_token: str
             ...
-            >>> path = Path("temp.json")
-            >>> path.write_text('{"api_token": "123"}') > 0
-            True
-            >>> service = CredentialsService(DummyEncryption())
-            >>> creds = service.loadEncryptedCredentials(path, DummyCreds)
-            >>> isinstance(creds, DummyCreds)
+            >>> path = Path("tmp.json")
+            >>> path.write_text('{"api_token": "123"}')
+            20
+            >>> service = CredentialsService(Dummy())
+            >>> isinstance(service.loadEncryptedCredentials(path, C), C)
             True
             >>> path.unlink()
         """
@@ -160,32 +157,30 @@ class CredentialsService:
         file_path: Path,
     ) -> None:
         """
-        Encrypt and persist credentials to a file.
+        Encrypt and save credentials.
 
         :param credentials: BaseCredentials = Credentials instance
-        :param file_path: Path = Destination file path
+        :param file_path: Path = Destination path
+
+        :return: None
 
         :raises OSError:
-            When file cannot be written
-
         :raises CredentialsSerializationError:
-            When encryption fails
 
         :example:
             >>> from pathlib import Path
             >>> from dataclasses import dataclass
-            >>> class DummyEncryption:
+            >>> class Dummy:
             ...     def encrypt(self, v): return v
             ...     def decrypt(self, v): return v
             ...
             >>> @dataclass(frozen=True)
-            ... class DummyCreds(BaseCredentials):
+            ... class C(BaseCredentials):
             ...     api_token: str
             ...
-            >>> service = CredentialsService(DummyEncryption())
-            >>> creds = DummyCreds(api_token="123")
-            >>> path = Path("temp.json")
-            >>> service.saveEncryptedCredentials(creds, path)
+            >>> service = CredentialsService(Dummy())
+            >>> path = Path("tmp.json")
+            >>> service.saveEncryptedCredentials(C("123"), path)
             >>> path.exists()
             True
             >>> path.unlink()
@@ -215,11 +210,14 @@ class CredentialsService:
 
 
 # ============================================================
-# Test
+# Main (Integration Tests with PathManager + Config)
 # ============================================================
 
 if __name__ == "__main__":
     from dataclasses import dataclass
+    from infra_core.core.path.path_manager import PathManager
+    from infra_core.core.path.path_definition import PathDefinition
+    from infra_core.core.path.path_config_provider import PathConfigProvider
 
     class MockEncryption:
         def encrypt(self, value: str) -> str:
@@ -233,17 +231,100 @@ if __name__ == "__main__":
         api_token: str
         client_id: str
 
-    service = CredentialsService(MockEncryption())
+    try:
+        # --------------------------------------------------------
+        # Setup PATH CONFIG (SDK way)
+        # --------------------------------------------------------
+        config = PathConfigProvider.get()
 
-    path = Path("test_credentials.json")
+        config = config.addPath("secrets_dir", PathDefinition("secrets"))
 
-    creds = ExampleCredentials(api_token="token", client_id="client")
+        config = config.addPath(
+            "credentials_file", PathDefinition("secrets/{name}.json")
+        )
 
-    service.saveEncryptedCredentials(creds, path)
+        PathConfigProvider.set(config)
 
-    loaded = service.loadEncryptedCredentials(path, ExampleCredentials)
+        # --------------------------------------------------------
+        # Initialize Manager
+        # --------------------------------------------------------
+        manager = PathManager()
 
-    print("Loaded:", loaded)
+        print("Resolved ROOT:", manager.getRoot())
 
-    if path.exists():
-        path.unlink()
+        service = CredentialsService(MockEncryption())
+
+        # --------------------------------------------------------
+        # TEST 1: CREATE DIRECTORY (via manager)
+        # --------------------------------------------------------
+        print("\n=== TEST 1: CREATE DIRECTORY ===")
+
+        secrets_dir = manager.createPath("secrets_dir")
+        print("Directory created:", secrets_dir.exists())
+
+        # --------------------------------------------------------
+        # TEST 2: SAVE FILE (via resolved path)
+        # --------------------------------------------------------
+        print("\n=== TEST 2: SAVE ===")
+
+        creds = ExampleCredentials(api_token="token", client_id="client")
+
+        file_path = manager.getPath(
+            "credentials_file", variables={"name": "test_credentials"}
+        )
+
+        service.saveEncryptedCredentials(creds, file_path)
+
+        print("Saved OK:", file_path.exists())
+
+        # --------------------------------------------------------
+        # TEST 3: LOAD
+        # --------------------------------------------------------
+        print("\n=== TEST 3: LOAD ===")
+
+        loaded = service.loadEncryptedCredentials(file_path, ExampleCredentials)
+
+        print("Loaded OK:", loaded)
+
+        # --------------------------------------------------------
+        # TEST 4: FILE NOT FOUND
+        # --------------------------------------------------------
+        print("\n=== TEST 4: FILE NOT FOUND ===")
+
+        try:
+            missing_path = manager.getPath(
+                "credentials_file", variables={"name": "not_exists"}
+            )
+
+            service.loadEncryptedCredentials(missing_path, ExampleCredentials)
+
+        except Exception as err:
+            print("Expected error:", err)
+
+        # --------------------------------------------------------
+        # TEST 5: INVALID JSON
+        # --------------------------------------------------------
+        print("\n=== TEST 5: INVALID JSON ===")
+
+        file_path.write_text("invalid json")
+
+        try:
+            service.loadEncryptedCredentials(file_path, ExampleCredentials)
+        except Exception as err:
+            print("Expected JSON error:", err)
+
+        # --------------------------------------------------------
+        # CLEANUP (via manager)
+        # --------------------------------------------------------
+        print("\n=== CLEANUP ===")
+
+        manager.deleteResource(
+            "credentials_file", variables={"name": "test_credentials"}
+        )
+
+        manager.deleteResource("secrets_dir")
+
+        print("Cleanup done")
+
+    except Exception as error:
+        print("Unexpected error:", error)

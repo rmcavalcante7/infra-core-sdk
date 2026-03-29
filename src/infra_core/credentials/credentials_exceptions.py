@@ -3,22 +3,34 @@
 # - inspect
 # ============================================================
 
+from __future__ import annotations
+
+import inspect
+
+from infra_core.exceptions.base import SDKError
+
 
 def getCurrentMethodName() -> str:
-    import inspect
+    """
+    Returns current method name.
 
+    :return: str
+
+    :example:
+        >>> isinstance(getCurrentMethodName(), str)
+        True
+    """
     frame = inspect.currentframe()
     if frame and frame.f_back:
         return frame.f_back.f_code.co_name
     return "unknown"
 
 
-class CredentialsError(Exception):
+class CredentialsError(SDKError):
     """
     Base exception for all credential-related errors.
 
-    This exception should be used as the root for all credential domain errors,
-    enabling consistent error handling across the SDK.
+    This class extends SDKError while preserving backward compatibility.
 
     :example:
         >>> try:
@@ -28,12 +40,20 @@ class CredentialsError(Exception):
         True
     """
 
-    pass
+    def __init__(self, message: str) -> None:
+        """
+        Initialize CredentialsError.
+
+        :param message: str = Error message
+
+        :return: None
+        """
+        super().__init__(message=message, code="CREDENTIALS_ERROR", context={})
 
 
 class CredentialsValidationError(CredentialsError):
     """
-    Raised when credential data is invalid or incomplete.
+    Raised when credential data is invalid.
 
     :example:
         >>> try:
@@ -48,7 +68,7 @@ class CredentialsValidationError(CredentialsError):
 
 class CredentialsNotFoundError(CredentialsError):
     """
-    Raised when credentials cannot be found in any configured source.
+    Raised when credentials cannot be found.
 
     :example:
         >>> try:
@@ -63,7 +83,7 @@ class CredentialsNotFoundError(CredentialsError):
 
 class CredentialsDecryptionError(CredentialsError):
     """
-    Raised when decryption of credentials fails.
+    Raised when decryption fails.
 
     :example:
         >>> try:
@@ -78,7 +98,7 @@ class CredentialsDecryptionError(CredentialsError):
 
 class CredentialsEncryptionError(CredentialsError):
     """
-    Raised when encryption of credentials fails.
+    Raised when encryption fails.
 
     :example:
         >>> try:
@@ -93,7 +113,7 @@ class CredentialsEncryptionError(CredentialsError):
 
 class CredentialsSerializationError(CredentialsError):
     """
-    Raised when serialization or deserialization fails.
+    Raised when serialization fails.
 
     :example:
         >>> try:
@@ -108,7 +128,7 @@ class CredentialsSerializationError(CredentialsError):
 
 class CredentialsFileError(CredentialsError):
     """
-    Raised when there are issues accessing credential-related files.
+    Raised when file operations fail.
 
     :example:
         >>> try:
@@ -122,16 +142,17 @@ class CredentialsFileError(CredentialsError):
 
 
 # ============================================================
-# Helper (optional, but useful for consistency)
+# Helper
 # ============================================================
 
 
 def buildExceptionMessage(class_name: str) -> str:
     """
-    Build standardized exception message with class and method context.
+    Build standardized exception message.
 
-    :param class_name: str = Name of the class raising the exception
-    :return: str = Formatted base message
+    :param class_name: str
+
+    :return: str
 
     :example:
         >>> msg = buildExceptionMessage("TestClass")
@@ -142,7 +163,7 @@ def buildExceptionMessage(class_name: str) -> str:
 
 
 # ============================================================
-# Test
+# Main
 # ============================================================
 
 if __name__ == "__main__":

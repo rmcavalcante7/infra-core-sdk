@@ -160,6 +160,18 @@ def generatePyproject(
                 "requires-python": python_requirement,
                 "authors": [{"name": author}],
                 "dependencies": dependencies,
+
+                # ====================================================
+                # 🔥 ADICIONADO (SEM REMOVER NADA)
+                # ====================================================
+                "license": {"text": "MIT"},
+                "classifiers": [
+                    "Programming Language :: Python :: 3",
+                    f"Programming Language :: Python :: {sys.version_info.major}.{sys.version_info.minor}",
+                    "Operating System :: OS Independent",
+                    "License :: OSI Approved :: MIT License",
+                ],
+
                 "optional-dependencies": {
                     "dev": DEV_DEPENDENCIES
                     + [

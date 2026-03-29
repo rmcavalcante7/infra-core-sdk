@@ -8,7 +8,7 @@
 from pathlib import Path
 from typing import Protocol, Type, cast, Any
 
-from infra_core.credentials.exceptions.credentials_exceptions import CredentialsError
+from infra_core.credentials.credentials_exceptions import CredentialsError
 
 
 class EncryptionProtocol(Protocol):

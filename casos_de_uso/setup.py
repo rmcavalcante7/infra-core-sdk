@@ -1,165 +1,252 @@
-from dataclasses import dataclass
+"""
+Infra Core SDK - Complete Example (Advanced)
 
-from infra_core import BaseCredentials, FernetEncryption, CredentialsLoader, PathConfig, path_exceptions, DEFAULT_PATH_CONFIG
-from infra_core.credentials.setup.credentials_setup_service import (
+Demonstrates:
+
+1. Root configuration (add/remove markers)
+2. Path configuration (ROOT / ABSOLUTE)
+3. Credentials setup
+4. Credentials loading
+5. Path resolution behavior
+
+This is the official reference implementation.
+"""
+
+# ============================================================
+# Dependencies
+# ============================================================
+
+from dataclasses import dataclass
+from pathlib import Path
+
+from infra_core import (
+    CredentialsLoader,
     CredentialsSetupService,
+    PathManager,
 )
 
+from infra_core.credentials.models.base_credentials import BaseCredentials
+from infra_core.security.fernet_encryption import FernetEncryption
+
+from infra_core.core.path.path_definition import PathDefinition
+from infra_core.core.path.path_config_provider import PathConfigProvider
+from infra_core.core.path.path_config import PathConfig
+
+from infra_core.core.root.root_config import RootConfig
+from infra_core.core.root.root_config_provider import RootConfigProvider
+from infra_core.core.root.root_resolver import RootResolver
+
+
+# ============================================================
+# Credentials Models
+# ============================================================
 
 @dataclass(frozen=True)
-class MyPipefyCredentials(BaseCredentials):
+class PipefyCredentials(BaseCredentials):
     api_token: str
 
+
 @dataclass(frozen=True)
-class MySharepointCredentials(BaseCredentials):
+class SharepointCredentials(BaseCredentials):
     user: str
     password: str
 
 
-import infra_core
-print(infra_core.__file__)
-
 # ============================================================
-# Setup
-# ============================================================
-setup = CredentialsSetupService(FernetEncryption)
-
-# ============================================================
-# Happy Path
+# Root Configuration
 # ============================================================
 
-print("\n=== HAPPY PATH ===")
+def configureRoot() -> None:
+    """
+    Demonstrates how to customize root resolution.
 
-setup.setup(MyPipefyCredentials(api_token="123"), name="pipefy")
-setup.setup(MySharepointCredentials(user="abc", password="teste"), name="sharepoint")
+    - Remove unwanted markers (e.g., setup.py)
+    - Add custom markers if needed
+    """
 
-pipefy = CredentialsLoader.load(MyPipefyCredentials, FernetEncryption, name="pipefy")
-sharepoint = CredentialsLoader.load(MySharepointCredentials, FernetEncryption, name="sharepoint")
+    print("\n=== ROOT CONFIGURATION ===")
 
-print(f"{pipefy=}")
-print(f"{sharepoint=}")
+    config = RootConfig(
+        markers=(
+            ".git",
+            "pyproject.toml",
+            # "setup.py",  # ❌ intentionally removed
+        )
+    )
 
+    RootConfigProvider.set(config)
 
-# ============================================================
-# Exception Tests - Directories
-# ============================================================
+    resolver = RootResolver()
+    root = resolver.resolve()
 
-print("\n=== DIRECTORY EXCEPTIONS ===")
-
-config = PathConfig.getDefault()
-print(f"{config.directories=}")
-print(f"{config.root_markers=}")
-# 1. DirectoryAlreadyExistsError
-try:
-    config.addDirectory(config.secretDirKey, "another_secret")
-except path_exceptions.DirectoryAlreadyExistsError as exc:
-    print("✔ DirectoryAlreadyExistsError OK:", exc)
-
-# 2. DirectoryNotFoundError
-try:
-    config.updateDirectory("not_exists", "x")
-except path_exceptions.DirectoryNotFoundError as exc:
-    print("✔ DirectoryNotFoundError OK:", exc)
-
-# 3. InvalidDirectoryPathError
-try:
-    config.updateDirectory(config.secretDirKey, "")
-except path_exceptions.InvalidDirectoryPathError as exc:
-    print("✔ InvalidDirectoryPathError OK:", exc)
+    print("Resolved root:", root)
 
 
 # ============================================================
-# Exception Tests - Root Markers
+# Path Configuration
 # ============================================================
 
-print("\n=== ROOT MARKER EXCEPTIONS ===")
+def configurePaths() -> None:
+    """
+    Configure paths with:
+    - ROOT-based
+    - ABSOLUTE
+    """
 
-# 4. InvalidRootMarkerError
-try:
-    config.addRootMarker("")
-except path_exceptions.InvalidRootMarkerError as exc:
-    print("✔ InvalidRootMarkerError OK:", exc)
+    print("\n=== PATH CONFIGURATION ===")
 
-# 5. RootMarkerNotFoundError
-try:
-    config.removeRootMarker(".not_exists")
-except path_exceptions.RootMarkerNotFoundError as exc:
-    print("✔ RootMarkerNotFoundError OK:", exc)
+    config = PathConfig()
+
+    # --------------------------------------------------------
+    # ROOT-BASED
+    # --------------------------------------------------------
+    config = config.addPath(
+        "secrets",
+        PathDefinition("secrets", use_root=True),
+    )
+
+    config = config.addPath(
+        "secret_key",
+        PathDefinition("secrets/key.key", use_root=True),
+    )
+
+    config = config.addPath(
+        "credentials",
+        PathDefinition("secrets/{name}.json", use_root=True),
+    )
+
+    # --------------------------------------------------------
+    # ABSOLUTE
+    # --------------------------------------------------------
+    absolute_path = str(Path.cwd() / "absolute/logs/app")
+
+    config = config.addPath(
+        "absolute_logs",
+        PathDefinition(absolute_path, use_root=False),
+    )
+
+    PathConfigProvider.set(config)
 
 
 # ============================================================
-# Dependency Behavior Test
+# Setup Credentials
 # ============================================================
 
-print("\n=== DEPENDENCY TEST ===")
+def setupCredentials() -> None:
+    """
+    Setup encrypted credentials.
+    """
 
-config = config.updateDirectory(config.secretDirKey, "new_secret")
+    print("\n=== SETUP CREDENTIALS ===")
 
-print("Updated directories:")
-for k, v in config.directories.items():
-    print(f"{k} -> {v}")
+    setup = CredentialsSetupService(FernetEncryption)
 
-print(f"{config.directories=}")
-print(f"{DEFAULT_PATH_CONFIG.directories=}")
+    setup.setup(PipefyCredentials(api_token="123"), name="pipefy")
 
-config = config.updateDirectory(config.downloadKey, "new_download")
-
-print("Updated directories:")
-for k, v in config.directories.items():
-    print(f"{k} -> {v}")
-
-print(f"{config.directories=}")
-print(f"{config.removeRootMarker=}")
-print(f"{DEFAULT_PATH_CONFIG.directories=}")
+    setup.setup(
+        SharepointCredentials(user="user", password="password"),
+        name="sharepoint",
+    )
 
 
 # ============================================================
-# Integration Test (After Change)
+# Load Credentials
 # ============================================================
 
-print("\n=== INTEGRATION AFTER UPDATE ===")
+def loadCredentials() -> None:
+    """
+    Load credentials.
+    """
 
-setup.setup(MyPipefyCredentials(api_token="123"), name="pipefy")
-setup.setup(MySharepointCredentials(user="abc", password="teste"), name="sharepoint")
+    print("\n=== LOAD CREDENTIALS ===")
 
-pipefy = CredentialsLoader.load(MyPipefyCredentials, FernetEncryption, name="pipefy")
-sharepoint = CredentialsLoader.load(MySharepointCredentials, FernetEncryption, name="sharepoint")
+    pipefy = CredentialsLoader.load(
+        PipefyCredentials,
+        FernetEncryption,
+        name="pipefy",
+    )
 
-print(f"{pipefy=}")
-print(f"{sharepoint=}")
+    sharepoint = CredentialsLoader.load(
+        SharepointCredentials,
+        FernetEncryption,
+        name="sharepoint",
+    )
 
-
-
-
-# TESTES DIRETÓRIO
-config = PathConfig.getDefault()
-config = config.updateDirectory(config.downloadKey, "new_download")
-
-print("Updated directories:")
-for k, v in config.directories.items():
-    print(f"{k} -> {v}")
-
-print(f"{config.directories=}")
-print(f"{config.removeRootMarker=}")
-print(f"{DEFAULT_PATH_CONFIG.directories=}")
+    print("Pipefy:", pipefy)
+    print("Sharepoint:", sharepoint)
 
 
-config = config.updateDirectory(config.secretDirKey, "new_secret")
+# ============================================================
+# Path Demonstration
+# ============================================================
 
-print("Updated directories:")
-for k, v in config.directories.items():
-    print(f"{k} -> {v}")
+def demonstratePaths() -> None:
+    """
+    Demonstrates resolved paths.
+    """
 
-print(f"{config.directories=}")
-print(f"{DEFAULT_PATH_CONFIG.directories=}")
+    print("\n=== PATH RESOLUTION ===")
 
-config = config.updateDirectory(config.secretKeyKey, "nova")
+    manager = PathManager()
 
-print("Updated directories:")
-for k, v in config.directories.items():
-    print(f"{k} -> {v}")
+    print("\n--- ROOT ---")
+    print("Secrets:", manager.getPath("secrets"))
+    print("Key:", manager.getPath("secret_key"))
+    print("Pipefy:", manager.getPath("credentials", name="pipefy"))
 
-print(f"{config.directories=}")
-print(f"{DEFAULT_PATH_CONFIG.directories=}")
+    print("\n--- ABSOLUTE ---")
+    print("Absolute logs:", manager.getPath("absolute_logs"))
 
-print("\nSETUP FINALIZADO")
+
+# ============================================================
+# Ensure Paths
+# ============================================================
+
+def ensurePaths() -> None:
+    """
+    Ensure directories exist.
+    """
+
+    print("\n=== ENSURE PATHS ===")
+
+    manager = PathManager()
+
+    manager.ensurePathExists("secrets")
+    manager.ensurePathExists("absolute_logs")
+
+    print("Paths ensured.")
+
+
+# ============================================================
+# Main
+# ============================================================
+
+if __name__ == "__main__":
+    try:
+        print("=== Infra Core SDK - COMPLETE EXAMPLE ===")
+
+        # 1. Root configuration (CRITICAL)
+        configureRoot()
+
+        # 2. Path configuration
+        configurePaths()
+
+        # 3. Ensure directories
+        ensurePaths()
+
+        # 4. Setup credentials
+        setupCredentials()
+
+        # 5. Show resolved paths
+        demonstratePaths()
+
+        # 6. Load credentials
+        loadCredentials()
+
+        print("\n=== DONE ===")
+
+    except Exception as error:
+        print("\n[ERROR]")
+        print(error)
+
+

@@ -9,7 +9,7 @@ from dataclasses import dataclass, fields
 from typing import Any, Dict, Type, TypeVar
 
 
-from infra_core.credentials.exceptions.credentials_exceptions import (
+from infra_core.credentials.credentials_exceptions import (
     CredentialsValidationError,
     CredentialsSerializationError,
 )
