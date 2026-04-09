@@ -42,7 +42,13 @@ __pycache__/
 secret/
 casos_de_uso/
 example_runtime_secrets/
-.aiassistant/
+.aiassistant/*
+!.aiassistant/checklist/
+!.aiassistant/checklist/**
+!.aiassistant/decisions/
+!.aiassistant/decisions/**
+!.aiassistant/runbooks/
+!.aiassistant/runbooks/**
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
