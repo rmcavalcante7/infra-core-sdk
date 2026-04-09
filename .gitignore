@@ -41,6 +41,8 @@ __pycache__/
 # Local data
 secret/
 casos_de_uso/
+example_runtime_secrets/
+.aiassistant/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

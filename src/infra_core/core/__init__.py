@@ -1,7 +1,10 @@
-from infra_core.core.path.path_manager import PathManager
-from infra_core.core.path.path_definition import PathDefinition
+from infra_core.core.path import PathConfig, PathManager
+from infra_core.core.root import RootConfig, RootConfigProvider, RootResolver
 
 __all__ = [
+    "PathConfig",
     "PathManager",
-    "PathDefinition",
+    "RootConfig",
+    "RootConfigProvider",
+    "RootResolver",
 ]

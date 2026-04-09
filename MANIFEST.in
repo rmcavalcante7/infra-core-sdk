@@ -1,0 +1,32 @@
+include LICENSE
+include README.md
+include pyproject.toml
+include pytest.ini
+
+recursive-include src *.py
+global-exclude *.docx
+global-exclude *.zip
+
+prune .aiassistant
+prune .github
+prune .idea
+prune .mypy_cache
+prune .pytest_cache
+prune .venv
+prune build
+prune dist
+prune casos_de_uso
+prune logs
+prune secrets
+prune tests
+
+exclude .coverage
+exclude .gitignore
+exclude src.zip
+exclude tests.zip
+exclude tree.txt
+exclude pyproject.py
+exclude CHANGELOG.md
+exclude PROMPT*.txt
+exclude prompt*.txt
+exclude promt*.txt

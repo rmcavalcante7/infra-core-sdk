@@ -58,6 +58,43 @@ class RootConfigError(RootError):
     DEFAULT_CODE: str = "ROOT_CONFIG_ERROR"
 
 
+class InvalidRootStartPathError(RootConfigError):
+    """
+    Raised when a configured start path is invalid.
+
+    :param start_path: str = Invalid start path value
+
+    :example:
+        >>> from infra_core.core.root.exceptions import InvalidRootStartPathError
+        >>> try:
+        ...     raise InvalidRootStartPathError("")
+        ... except InvalidRootStartPathError:
+        ...     True
+        True
+    """
+
+    DEFAULT_CODE: str = "ROOT_INVALID_START_PATH"
+
+    def __init__(self, start_path: str) -> None:
+        """
+        Initializes InvalidRootStartPathError.
+
+        :param start_path: str = Invalid start path value
+
+        :example:
+            >>> from infra_core.core.root.exceptions import InvalidRootStartPathError
+            >>> try:
+            ...     raise InvalidRootStartPathError("x")
+            ... except InvalidRootStartPathError:
+            ...     True
+            True
+        """
+        super().__init__(
+            message="Invalid root start path",
+            context={"start_path": start_path},
+        )
+
+
 class InvalidRootMarkerError(RootConfigError):
     """
     Raised when a root marker is invalid.

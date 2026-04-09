@@ -1,15 +1,18 @@
 # ============================================================
 # Dependencies:
 # - dataclasses
+# - pathlib
 # - typing
 # ============================================================
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Tuple
+from pathlib import Path
+from typing import Optional, Tuple
 
 from infra_core.core.root.exceptions import (
+    InvalidRootStartPathError,
     InvalidRootMarkerError,
     RootMarkerNotFoundError,
 )
@@ -23,6 +26,7 @@ class RootConfig:
     Defines which markers are used to identify the project root.
 
     :param markers: Tuple[str, ...] = Root detection markers
+    :param start_path: Optional[Path] = Preferred starting point for resolution
 
     :example:
         >>> from infra_core.core.root.root_config import RootConfig
@@ -32,6 +36,7 @@ class RootConfig:
     """
 
     markers: Tuple[str, ...] = field(default_factory=tuple)
+    start_path: Optional[Path] = None
 
     # ============================================================
     # Initialization
@@ -56,6 +61,13 @@ class RootConfig:
             object.__setattr__(self, "markers", self._defaultMarkers())
         else:
             self._validateMarkers(self.markers)
+
+        if self.start_path is not None:
+            object.__setattr__(
+                self,
+                "start_path",
+                self._normalizeStartPath(self.start_path),
+            )
 
     # ============================================================
     # Public Methods
@@ -84,7 +96,10 @@ class RootConfig:
         if marker in self.markers:
             return self
 
-        return RootConfig(markers=(*self.markers, marker))
+        return RootConfig(
+            markers=(*self.markers, marker),
+            start_path=self.start_path,
+        )
 
     def removeMarker(self, marker: str) -> "RootConfig":
         """
@@ -107,7 +122,33 @@ class RootConfig:
         if marker not in self.markers:
             raise RootMarkerNotFoundError(marker)
 
-        return RootConfig(markers=tuple(m for m in self.markers if m != marker))
+        return RootConfig(
+            markers=tuple(m for m in self.markers if m != marker),
+            start_path=self.start_path,
+        )
+
+    def withStartPath(self, start_path: Path | str) -> "RootConfig":
+        """
+        Returns a new configuration with an explicit resolution start path.
+
+        :param start_path: Path | str = Preferred starting point for root lookup
+
+        :return: RootConfig = New configuration instance
+
+        :raises InvalidRootStartPathError:
+            When start_path is empty or invalid
+
+        :example:
+            >>> from pathlib import Path
+            >>> from infra_core.core.root.root_config import RootConfig
+            >>> config = RootConfig().withStartPath(Path.cwd())
+            >>> isinstance(config.start_path, Path)
+            True
+        """
+        return RootConfig(
+            markers=self.markers,
+            start_path=self._normalizeStartPath(start_path),
+        )
 
     # ============================================================
     # Private Methods
@@ -161,6 +202,31 @@ class RootConfig:
             ".venv",
             ".root",
         )
+
+    def _normalizeStartPath(self, start_path: Path | str) -> Path:
+        """
+        Normalizes configured start path into a resolved directory path.
+
+        :param start_path: Path | str = Raw configured start path
+
+        :return: Path = Normalized directory path
+
+        :raises InvalidRootStartPathError:
+            When start_path is empty or invalid
+        """
+        if isinstance(start_path, Path):
+            normalized = start_path
+        elif isinstance(start_path, str) and start_path.strip():
+            normalized = Path(start_path)
+        else:
+            raise InvalidRootStartPathError(str(start_path))
+
+        resolved = normalized.expanduser().resolve()
+
+        if resolved.is_file():
+            return resolved.parent
+
+        return resolved
 
 
 # ============================================================

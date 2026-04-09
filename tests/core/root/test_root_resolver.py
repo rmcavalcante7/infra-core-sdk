@@ -7,6 +7,8 @@
 from pathlib import Path
 import pytest
 
+from infra_core.core.root.root_config import RootConfig
+from infra_core.core.root.root_config_provider import RootConfigProvider
 from infra_core.core.root.root_resolver import RootResolver
 from infra_core.core.root.exceptions import RootResolutionError
 
@@ -22,6 +24,13 @@ def create_fake_project(tmp_path: Path):
     (root / ".git").mkdir()
 
     return root
+
+
+@pytest.fixture(autouse=True)
+def reset_root_provider():
+    RootConfigProvider.reset()
+    yield
+    RootConfigProvider.reset()
 
 
 # ============================================================
@@ -118,3 +127,35 @@ def test_resolve_caching(tmp_path, monkeypatch):
     second = resolver.resolve()
 
     assert first == second
+
+
+def test_resolve_with_configured_start_path(tmp_path, monkeypatch):
+    root = create_fake_project(tmp_path)
+    subdir = root / "service" / "api"
+    subdir.mkdir(parents=True)
+
+    monkeypatch.chdir(tmp_path.parent)
+    RootConfigProvider.set(RootConfig(markers=(".git",), start_path=subdir))
+
+    resolver = RootResolver()
+
+    assert resolver.resolve() == root
+
+
+def test_resolve_uses_caller_path_when_cwd_is_outside_project(
+    tmp_path, monkeypatch
+):
+    root = create_fake_project(tmp_path)
+    app_dir = root / "src_app"
+    app_dir.mkdir()
+
+    external_cwd = tmp_path / "outside"
+    external_cwd.mkdir()
+
+    monkeypatch.chdir(external_cwd)
+    monkeypatch.setattr(RootResolver, "_shouldUseCallerFallback", lambda self: True)
+    monkeypatch.setattr(RootResolver, "_getCallerPath", lambda self: app_dir)
+
+    resolver = RootResolver()
+
+    assert resolver.resolve() == root
