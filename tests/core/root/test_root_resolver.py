@@ -142,9 +142,7 @@ def test_resolve_with_configured_start_path(tmp_path, monkeypatch):
     assert resolver.resolve() == root
 
 
-def test_resolve_uses_caller_path_when_cwd_is_outside_project(
-    tmp_path, monkeypatch
-):
+def test_resolve_uses_caller_path_when_cwd_is_outside_project(tmp_path, monkeypatch):
     root = create_fake_project(tmp_path)
     app_dir = root / "src_app"
     app_dir.mkdir()
