@@ -40,6 +40,7 @@ __pycache__/
 
 # Local data
 secret/
+secrets/
 casos_de_uso/
 example_runtime_secrets/
 .aiassistant/*
