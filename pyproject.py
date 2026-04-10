@@ -105,10 +105,7 @@ def mapToInstalledPackages(imports: Set[str]) -> List[str]:
 
 
 def getPythonRequirement() -> str:
-    major = sys.version_info.major
-    minor = sys.version_info.minor
-
-    return f">={major}.{minor},<{major}.{minor + 1}"
+    return ">=3.12"
 
 
 # ============================================================

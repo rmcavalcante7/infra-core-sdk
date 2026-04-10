@@ -1,6 +1,6 @@
 # infra-core-sdk
 
-[![PyPI version](https://img.shields.io/pypi/v/infra-core-sdk.svg)](https://pypi.org/project/infra-core-sdk/)
+[![Version](https://img.shields.io/badge/version-0.2.2-blue.svg)](https://pypi.org/project/infra-core-sdk/)
 [![Python](https://img.shields.io/pypi/pyversions/infra-core-sdk.svg)](https://pypi.org/project/infra-core-sdk/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -11,7 +11,7 @@
 - encrypted credential setup and loading
 - typed, reusable runtime filesystem operations
 
-Current published version: `0.2.1.post1`
+Current published version: `0.2.2`
 
 ---
 
@@ -70,7 +70,7 @@ This SDK is designed to be installed and consumed by other Python projects, not 
 Latest published version:
 
 ```bash
-pip install infra-core-sdk==0.2.1.post1
+pip install infra-core-sdk==0.2.2
 ```
 
 Or install the latest available release:
@@ -78,6 +78,12 @@ Or install the latest available release:
 ```bash
 pip install infra-core-sdk
 ```
+
+Python support policy:
+
+- package metadata allows Python `>=3.12`
+- practical validation has been executed on Python `3.14`
+- versions above `3.12` other than `3.14` have not yet been explicitly tested
 
 ---
 
